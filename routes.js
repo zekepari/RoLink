@@ -1,5 +1,5 @@
 import { completeAuth, getUserInfo, exchangeCodeForToken } from './auth.js';
-import { writeToDatabase } from './database.js';
+import { writeToUsers } from './database.js';
 import { stateMap } from './discordBot.js';
 
 export default function setupRoutes(app) {
@@ -19,7 +19,7 @@ export default function setupRoutes(app) {
         try {
             const tokenData = await exchangeCodeForToken(code);
             const userInfo = await getUserInfo(tokenData.access_token);
-            await writeToDatabase(discordId.user.id, userInfo.sub);
+            await writeToUsers(discordId.user.id, userInfo.sub);
 
             res.redirect('/success');
         } catch (error) {

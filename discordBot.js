@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } from 'discord.js';
 import { generateState, completeAuth } from './auth.js';
+import { saveMessageId, getMessageId } from './database.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -9,22 +10,21 @@ export const stateMap = new Map();
 export default function setupBot() {
     const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
-    client.once('ready', () => {
+    client.once('ready', async () => {
         console.log(`Logged in as ${client.user.username}`);
 
-        const embed = new EmbedBuilder()
-            .setTitle('Link Your Roblox Account')
-            .setDescription('Click to link your Discord user to your Roblox account.');
+        const existingMessageId = await getMessageId();
 
-        const button = new ButtonBuilder()
-            .setCustomId('link')
-            .setLabel('Link Roblox')
-            .setStyle(ButtonStyle.Success);
-
-        const row = new ActionRowBuilder().addComponents(button);
-
-        const channel = client.channels.cache.get('1195675956652802159');
-        channel.send({ embeds: [embed], components: [row] });
+        if (existingMessageId) {
+            try {
+                const channel = client.channels.cache.get('YOUR_CHANNEL_ID');
+                await channel.messages.fetch(existingMessageId);
+            } catch {
+                sendLinkEmbed();
+            }
+        } else {
+            sendLinkEmbed();
+        }
     });
 
     client.on('interactionCreate', async interaction => {
@@ -42,7 +42,7 @@ export default function setupBot() {
                 .setTitle('Your Authorization Link')
                 .setDescription('Click to authorize RoLinker to access your Roblox user information.')
                 .setFooter({ text: 'You will be redirected to apis.roblox.com. This link will expire in 2 minutes.' });
-            
+
             const button = new ButtonBuilder()
                 .setLabel('Authorize')
                 .setURL(authUrl)
@@ -62,6 +62,23 @@ export default function setupBot() {
             }, 120000); // 2 minutes
         }
     });
+
+    async function sendLinkEmbed() {
+        const embed = new EmbedBuilder()
+            .setTitle('Link Your Roblox Account')
+            .setDescription('Click to link your Discord user to your Roblox account.');
+
+        const button = new ButtonBuilder()
+            .setCustomId('link')
+            .setLabel('Link Roblox')
+            .setStyle(ButtonStyle.Success);
+
+        const row = new ActionRowBuilder().addComponents(button);
+
+        const channel = client.channels.cache.get('1195675956652802159');
+        const message = await channel.send({ embeds: [embed], components: [row] });
+        await saveMessageId(message.id);
+    }
 
     client.login(process.env.DISCORD_BOT_TOKEN);
 }
