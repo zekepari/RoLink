@@ -1,6 +1,6 @@
 import { completeAuth, getUserInfo, exchangeCodeForToken } from './auth.js';
+import { writeToDatabase } from './database.js';
 import { stateMap } from './discordBot.js';
-import mysql from 'mysql2/promise';
 
 export default function setupRoutes(app) {
     app.get('/auth', async (req, res) => {
@@ -18,8 +18,10 @@ export default function setupRoutes(app) {
         
         try {
             const tokenData = await exchangeCodeForToken(code);
-            const userInfo = await getUserInfo(tokenData.access_token, res);
-            console.log(userInfo.sub);
+            const userInfo = await getUserInfo(tokenData.access_token);
+            await writeToDatabase(discordId.user.id, userInfo.sub);
+
+            res.redirect('/success');
         } catch (error) {
             res.status(500).send('Server error');
         } finally {

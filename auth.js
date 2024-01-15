@@ -5,26 +5,6 @@ import { stateMap } from './discordBot.js';
 
 dotenv.config();
 
-const pool = mysql.createPool({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: 'rolinker_db',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-})
-
-async function writeToDatabase(discordId, robloxId) {
-    try {
-        const query = 'INSERT INTO users (discord_id, roblox_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE roblox_id = ?';
-        const values = [discordId, robloxId, robloxId];
-        await pool.query(query, values);
-    } catch (error) {
-        throw error;
-    }
-}
-
 export function generateState() {
     return crypto.randomBytes(16).toString('hex');
 }
@@ -41,7 +21,7 @@ export async function completeAuth(state) {
     }
 }
 
-export async function getUserInfo(accessToken, res) {
+export async function getUserInfo(accessToken) {
     try {
         const userInfoResponse = await fetch('https://apis.roblox.com/oauth/v1/userinfo', {
             method: 'GET',
@@ -53,16 +33,12 @@ export async function getUserInfo(accessToken, res) {
         const userInfoData = await userInfoResponse.json();
 
         if (userInfoResponse.ok) {
-            await writeToDatabase(interaction.user.id, userInfoData.sub);
-
-            res.send(userInfoData);
             return userInfoData;
         } else {
             throw new Error('Failed to fetch user info');
         }
     } catch (error) {
         console.error('Error fetching user info:', error);
-        res.status(500).send('Error fetching user info');
         return null;
     }
 }
