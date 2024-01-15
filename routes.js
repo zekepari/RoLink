@@ -1,5 +1,6 @@
-import { completeAuth, getUserInfo } from './auth.js';
+import { completeAuth, getUserInfo, exchangeCodeForToken } from './auth.js';
 import { stateMap } from './discordBot.js';
+import mysql from 'mysql2/promise';
 
 export default function setupRoutes(app) {
     app.get('/auth', async (req, res) => {
@@ -16,20 +17,7 @@ export default function setupRoutes(app) {
         }
         
         try {
-            const tokenResponse = await fetch('https://apis.roblox.com/oauth/v1/token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: new URLSearchParams({
-                    client_id: process.env.ROBLOX_OAUTH_CLIENT,
-                    client_secret: process.env.ROBLOX_OAUTH_KEY,
-                    grant_type: 'authorization_code',
-                    code: code
-                })
-            });
-
-            const tokenData = await tokenResponse.json();
+            const tokenData = await exchangeCodeForToken(code);
             const userInfo = await getUserInfo(tokenData.access_token, res);
             console.log(userInfo.sub);
         } catch (error) {
