@@ -6,13 +6,13 @@ export default function setupRoutes(app) {
     app.get('/auth', async (req, res) => {
         const { code, state } = req.query;
         if (!code) {
-            res.status(400).send('Auth code not provided');
+            res.redirect('/auth/error');
             return;
         }
 
         const discordId = stateMap.get(state);
         if (!discordId) {
-            res.status(400).send('Invalid state parameter');
+            res.redirect('/auth/error');
             return;
         }
         
@@ -21,9 +21,9 @@ export default function setupRoutes(app) {
             const userInfo = await getUserInfo(tokenData.access_token);
             await writeToUsers(discordId.user.id, userInfo.sub);
 
-            res.redirect('/success');
+            res.redirect('/auth/success');
         } catch (error) {
-            res.status(500).send('Server error');
+            res.redirect('/auth/error');
         } finally {
             completeAuth(state);
         }
