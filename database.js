@@ -29,36 +29,6 @@ async function ensureTableExists() {
     }
 }
 
-async function ensureEmbedMessageTableExists() {
-    const createEmbedMessageTableQuery = `
-        CREATE TABLE IF NOT EXISTS embed_messages (
-            message_id BIGINT PRIMARY KEY
-        )
-    `;
-
-    try {
-        await pool.query(createEmbedMessageTableQuery);
-    } catch (error) {
-        console.error("Error creating embed_messages table:", error);
-        throw error;
-    }
-}
-
-export async function saveMessageId(messageId) {
-    await ensureEmbedMessageTableExists();
-    const deleteQuery = 'DELETE FROM embed_messages';
-    await pool.query(deleteQuery);
-    const query = 'INSERT INTO embed_messages (message_id) VALUES (?) ON DUPLICATE KEY UPDATE message_id = ?';
-    await pool.query(query, [BigInt(messageId), BigInt(messageId)]);
-}
-
-export async function getMessageId() {
-    await ensureEmbedMessageTableExists();
-    const query = 'SELECT message_id FROM embed_messages LIMIT 1';
-    const [rows] = await pool.query(query);
-    return rows.length > 0 ? rows[0].message_id : null;
-}
-
 export async function writeToUsers(discordId, robloxId) {
     try {
         await ensureTableExists();
@@ -68,6 +38,32 @@ export async function writeToUsers(discordId, robloxId) {
         await pool.query(query, values);
     } catch (error) {
         console.error("Error writing to database users:", error);
+        throw error;
+    }
+}
+
+export async function getRobloxFromDiscord(discordId) {
+    try {
+        const query = 'SELECT roblox_id FROM users WHERE discord_id = ?';
+        const values = [BigInt(discordId)];
+        const [rows] = await pool.query(query, values);
+
+        return rows.length > 0 ? rows[0].roblox_id : null;
+    } catch (error) {
+        console.error("Error retrieving Roblox ID from database using Discord ID:", error);
+        throw error;
+    }
+}
+
+export async function getDiscordFromRoblox(robloxId) {
+    try {
+        const query = 'SELECT discord_id FROM users WHERE roblox_id = ?';
+        const values = [BigInt(robloxId)];
+        const [rows] = await pool.query(query, values);
+
+        return rows.length > 0 ? rows[0].discord_id : null;
+    } catch (error) {
+        console.error("Error retrieving Discord ID from database using Roblox ID:", error);
         throw error;
     }
 }

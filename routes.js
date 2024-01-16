@@ -1,7 +1,7 @@
 import { EmbedBuilder } from 'discord.js'
 import { getUserInfo, exchangeCodeForToken } from './auth.js';
-import { writeToUsers } from './database.js';
-import { stateMap } from './discordBot.js';
+import { writeToUsers, getDiscordFromRoblox, getRobloxFromDiscord } from './database.js';
+import { stateMap } from './index.js';
 
 export default function setupRoutes(app) {
     app.get('/auth', async (req, res) => {
@@ -51,6 +51,46 @@ export default function setupRoutes(app) {
             await interaction.editReply({embeds: [errorEmbed], components: []})
         } finally {
             stateMap.delete(state);
+        }
+    });
+
+    app.get('/discord-to-roblox', async (req, res) => {
+        const { id } = req.query;
+        if (!id) {
+            res.status(400).json({ error: "Discord ID is required" });
+            return;
+        }
+
+        try {
+            const robloxId = await getRobloxFromDiscord(id);
+            if (robloxId) {
+                res.json({ robloxId });
+            } else {
+                res.status(404).json({ error: "No Roblox ID found for the provided Discord ID" });
+            }
+        } catch (error) {
+            console.error("Error in /discord-to-roblox route:", error);
+            res.status(500).json({ error: "Internal server error" });
+        }
+    });
+
+    app.get('/roblox-to-discord', async (req, res) => {
+        const { id } = req.query;
+        if (!id) {
+            res.status(400).json({ error: "Roblox ID is required" });
+            return;
+        }
+
+        try {
+            const robloxId = await getDiscordFromRoblox(id);
+            if (robloxId) {
+                res.json({ robloxId });
+            } else {
+                res.status(404).json({ error: "No Discord ID found for the provided Roblox ID" });
+            }
+        } catch (error) {
+            console.error("Error in /roblox-to-discord route:", error);
+            res.status(500).json({ error: "Internal server error" });
         }
     });
 }
