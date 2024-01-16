@@ -1,5 +1,5 @@
 import { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } from 'discord.js';
-import { generateState, completeAuth } from './auth.js';
+import { generateState } from './auth.js';
 import { saveMessageId, getMessageId } from './database.js';
 import dotenv from 'dotenv';
 
@@ -57,8 +57,16 @@ export default function setupBot() {
                 fetchReply: true
             });
 
-            setTimeout(() => {
-                completeAuth(state);
+            setTimeout(async () => {
+                if (stateMap.has(state)) {
+                    const interaction = stateMap.get(state);
+                    try {
+                        await interaction.deleteReply();
+                    } catch (error) {
+                        console.error('Error deleting reply:', error);
+                    }
+                    stateMap.delete(state);
+                }
             }, 120000); // 2 minutes
         }
     });
@@ -66,7 +74,7 @@ export default function setupBot() {
     async function sendLinkEmbed() {
         const embed = new EmbedBuilder()
             .setTitle('Link Your Roblox Account')
-            .setDescription('Click to link your Discord user to your Roblox account.');
+            .setDescription('Click to link your Discord account to your Roblox account.');
 
         const button = new ButtonBuilder()
             .setCustomId('link')

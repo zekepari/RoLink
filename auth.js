@@ -1,24 +1,11 @@
 import fetch from 'node-fetch';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-import { stateMap } from './discordBot.js';
 
 dotenv.config();
 
 export function generateState() {
     return crypto.randomBytes(16).toString('hex');
-}
-
-export async function completeAuth(state) {
-    if (stateMap.has(state)) {
-        const interaction = stateMap.get(state);
-        try {
-            await interaction.deleteReply();
-        } catch (error) {
-            console.error('Error deleting reply:', error);
-        }
-        stateMap.delete(state);
-    }
 }
 
 export async function getUserInfo(accessToken) {
