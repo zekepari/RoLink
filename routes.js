@@ -1,7 +1,7 @@
 import { getUserInfo, exchangeCodeForToken } from './auth.js';
 import { writeToUsers, getDiscordFromRoblox, getRobloxFromDiscord } from './database.js';
 import { stateMap } from './index.js';
-import { authErrorMessage, authSuccessMessage, failMessage, successMessage } from './discord/messages.js';
+import { failMessage, successMessage } from './discord/messages.js';
 
 export default function setupRoutes(app) {
     app.get('/auth', async (req, res) => {
