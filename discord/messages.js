@@ -1,6 +1,6 @@
 import { EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } from 'discord.js';
 
-export const successMessage = (title, description) = {
+export const successMessage = (title, description) => ({
     embeds: [
         new EmbedBuilder()
             .setTitle(`${title} Successful`)
@@ -9,9 +9,9 @@ export const successMessage = (title, description) = {
     ],
     components: [],
     ephemeral: true
-}
+})
 
-export const failMessage = (title, description) = {
+export const failMessage = (title, description) => ({
     embeds: [
         new EmbedBuilder()
             .setTitle(`${title} Failed`)
@@ -20,7 +20,7 @@ export const failMessage = (title, description) = {
     ],
     components: [],
     ephemeral: true
-}
+})
 
 export const linkMessage = {
     embeds: [

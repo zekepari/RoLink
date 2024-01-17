@@ -73,6 +73,18 @@ export async function getGroupFromGuild(guildId) {
     }
 }
 
+export async function delSubGroupIfExist(groupId) {
+    try {
+        const query = 'DELETE FROM sub_groups WHERE group_id = ?';
+        const values = [parseInt(groupId)];
+        const [result] = await pool.query(query, values);
+
+        return result.affectedRows > 0;
+    } catch (error) {
+        throw error;
+    }
+}
+
 export async function getRobloxFromDiscord(discordId) {
     try {
         const query = 'SELECT roblox_id FROM users WHERE discord_id = ?';

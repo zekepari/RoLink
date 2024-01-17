@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { getRobloxFromDiscord, writeToGuilds } from '../../database.js';
+import { delSubGroupIfExist, getRobloxFromDiscord, writeToGuilds, writeToSubGroups } from '../../database.js';
 import noblox from 'noblox.js'
 import { failMessage, linkMessage, successMessage } from '../messages.js';
 
@@ -29,37 +29,91 @@ export const setCommand = {
         if (interaction.options.getSubcommand() === 'link-channel') {
             const channel = interaction.options.getChannel('channel') ?? interaction.channel;
 
-            try {
-                await interaction.deferReply();
-                await interaction.deleteReply();
+            if (interaction.guild.ownerId != interaction.user.id) {
+                await interaction.reply(failMessage('Set Group', 'You must be the Discord server owner to use this command.'));
+                return
+            }
 
+            try {
                 await channel.send(linkMessage);
+                await interaction.reply(successMessage('Set Link-Channel', 'Your link-channel has been set successfully.'));
             } catch (error) {
-                console.error(error);
+                console.error(error)
+                await interaction.reply(failMessage('Set Link-Channel', 'There was an error setting the link-channel. Check if RoLinker can send messages to that channel.'));
             }
         } else if (interaction.options.getSubcommand() === 'group') {
             const groupId = interaction.options.getInteger('group-id');
             const mainGroupId = interaction.options.getInteger('main-group-id') ?? false;
+            const robloxId = await getRobloxFromDiscord(interaction.user.id);
 
-            if (!mainGroupId) {
-                const robloxId = await getRobloxFromDiscord(interaction.user.id)
+            //assure ownership of discord
+            if (interaction.guild.ownerId != interaction.user.id) {
+                await interaction.reply(failMessage('Set Group', 'You must be the Discord server owner to use this command.'));
+                return;
+            }
 
-                if (robloxId) {
-                    const robloxRank = await noblox.getRankInGroup(groupId, robloxId)
+            //assure user is linked
+            if (!robloxId) {
+                await interaction.reply(failMessage('Set Group', 'Your Roblox account is not linked.'));
+                return;
+            }
 
-                    if (robloxRank == 255) {
-                        writeToGuilds(interaction.guild.id, groupId);
-                        interaction.reply(successMessage('Set Group', 'Your Roblox group has been set successfully.'));
-                    } else {
-                        interaction.reply(failMessage('Set Group', 'There was an error setting your Roblox group.'));
-                    }
-                } else {
+            //assure ownership of group(s)
+            try {
+                const robloxRank = await noblox.getRankInGroup(groupId, robloxId)
 
+                if (robloxRank != 255) {
+                    await interaction.reply(failMessage('Set Group', 'You must be the Roblox group owner to use this command.'));
+                    return;
                 }
-                //write to MYSQL table 'main_groups' => col1 [primary key]: guild id, col2 [foreign key]: group id
+
+                if (mainGroupId) {
+                    try {
+                        const subRobloxRank = await noblox.getRankInGroup(mainGroupId, robloxId)
+                        if (subRobloxRank != 255) {
+                            await interaction.reply(failMessage('Set Group', 'You must be the Roblox group owner to use this command.'));
+                            return;
+                        }
+                    } catch (error) {
+                        console.error(error)
+                        await interaction.reply(failMessage('Set Group', 'There was an error getting your Roblox main group rank. Please contact support if this problem persists.'));
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error(error)
+                await interaction.reply(failMessage('Set Group', 'There was an error getting your Roblox group rank. Please contact support if this problem persists.'));
+                return;
+            }
+
+            if (!mainGroupId || mainGroupId === 0) {
+                try {
+                    await writeToGuilds(interaction.guild.id, groupId);
+                    const wasSubGroup = await delSubGroupIfExist(groupId)
+
+                    if (wasSubGroup) {
+                        await interaction.reply(successMessage('Set Group', 'Your Roblox group has been set successfully, note that this Roblox group is no longer a sub-group.'));
+                    } else {
+                        await interaction.reply(successMessage('Set Group', 'Your Roblox group has been set successfully.'));
+                    }
+                } catch (error) {
+                    console.error(error)
+                    await interaction.reply(failMessage('Set Group', 'There was an error setting the Roblox group. Please contact support if this problem persists.'));
+                }
             } else {
-                //check if main group id exists in MYSQL table 'main_groups', if so:
-                //write to MYSQL table 'division_groups' => col1 [primary key]: guild id, col2: group id, col3 [foreign key]: main group id
+                if (mainGroupId === groupId) {
+                    await interaction.reply(failMessage('Set Group', 'You cannot make a group a sub-group of itself.'));
+                    return;
+                }
+
+                try {
+                    await writeToGuilds(interaction.guild.id, groupId);
+                    await writeToSubGroups(groupId, mainGroupId)
+                    await interaction.reply(successMessage('Set Group', 'Your Roblox sub-group has been set successfully.'));
+                } catch (error) {
+                    console.error(error)
+                    await interaction.reply(failMessage('Set Group', 'There was an error setting the Roblox sub-group. Please contact support if this problem persists.'));
+                }
             }
         }
     }

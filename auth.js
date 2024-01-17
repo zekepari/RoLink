@@ -25,7 +25,7 @@ export async function getUserInfo(accessToken) {
             throw new Error('Failed to fetch user info');
         }
     } catch (error) {
-        console.error('Error fetching user info:', error);
+        console.error(error);
         return null;
     }
 }
@@ -53,7 +53,7 @@ export async function exchangeCodeForToken(code) {
             throw new Error('Failed to exchange code for token');
         }
     } catch (error) {
-        console.error('Error exchanging code for token:', error);
+        console.error(error);
         throw error;
     }
 }
