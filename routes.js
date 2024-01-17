@@ -1,7 +1,7 @@
 import { getUserInfo, exchangeCodeForToken } from './auth.js';
 import { writeToUsers, getDiscordFromRoblox, getRobloxFromDiscord } from './database.js';
 import { stateMap } from './index.js';
-import { authErrorMessage, authSuccessMessage } from './discord/messages.js';
+import { authErrorMessage, authSuccessMessage, failMessage, successMessage } from './discord/messages.js';
 
 export default function setupRoutes(app) {
     app.get('/auth', async (req, res) => {
@@ -22,23 +22,11 @@ export default function setupRoutes(app) {
             const userInfo = await getUserInfo(tokenData.access_token);
             await writeToUsers(interaction.user.id, userInfo.sub);
 
-            setTimeout(async () => {
-                try {
-                    await interaction.deleteReply();
-                } catch { }
-            }, 30000); // 30 seconds
-
             res.redirect('/auth/success');
-            await interaction.editReply(authSuccessMessage )
+            await interaction.editReply(successMessage('Authorization', 'Your Discord and Roblox accounts have been linked successfully.'))
         } catch (error) {
-            setTimeout(async () => {
-                try {
-                    await interaction.deleteReply();
-                } catch { }
-            }, 30000); // 30 seconds
-
             res.redirect('/auth/error');
-            await interaction.editReply(authErrorMessage)
+            await interaction.editReply(failMessage('Authorization', 'There was an error linking your Discord and Roblox accounts.'))
         } finally {
             stateMap.delete(state);
         }

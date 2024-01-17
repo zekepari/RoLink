@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { getRobloxFromDiscord } from '../../database.js';
+import { getRobloxFromDiscord, writeToGuilds } from '../../database.js';
 import noblox from 'noblox.js'
-import { linkMessage } from '../messages.js';
+import { failMessage, linkMessage, successMessage } from '../messages.js';
 
 export const setCommand = {
     data: new SlashCommandBuilder()
@@ -33,7 +33,7 @@ export const setCommand = {
                 await interaction.deferReply();
                 await interaction.deleteReply();
 
-                await channel.send(linkMessage());
+                await channel.send(linkMessage);
             } catch (error) {
                 console.error(error);
             }
@@ -45,7 +45,14 @@ export const setCommand = {
                 const robloxId = await getRobloxFromDiscord(interaction.user.id)
 
                 if (robloxId) {
+                    const robloxRank = await noblox.getRankInGroup(groupId, robloxId)
 
+                    if (robloxRank == 255) {
+                        writeToGuilds(interaction.guild.id, groupId);
+                        interaction.reply(successMessage('Set Group', 'Your Roblox group has been set successfully.'));
+                    } else {
+                        interaction.reply(failMessage('Set Group', 'There was an error setting your Roblox group.'));
+                    }
                 } else {
 
                 }
