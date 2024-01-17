@@ -93,4 +93,24 @@ export default function setupRoutes(app) {
             res.status(500).json({ error: "Internal server error" });
         }
     });
+
+    app.get('/get-roles', async (req, res) => {
+        const { id } = req.query
+        if (!id) {
+            res.status(400).json({ error: "Discord ID is required" });
+            return;
+        }
+
+        try {
+            const robloxId = await getRobloxFromDiscord(id);
+            if (robloxId) {
+                // get roles logic
+            } else {
+                res.status(404).json({ error: "No Roblox ID found for the provided Discord ID" });
+            }
+        } catch (error) {
+            console.error("Error in /discord-to-roblox route:", error);
+            res.status(500).json({ error: "Internal server error" });
+        }
+    })
 }
