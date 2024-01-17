@@ -13,31 +13,62 @@ const pool = mysql.createPool({
     queueLimit: 0,
 });
 
-async function ensureTableExists() {
-    const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS users (
-            discord_id BIGINT PRIMARY KEY,
-            roblox_id INT
-        )
-    `;
-
+export async function writeToGuilds(guildId, groupId) {
     try {
-        await pool.query(createTableQuery);
+        const query = 'INSERT INTO guilds (guild_id, group_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE group_id = ?';
+        const values = [BigInt(guildId), parseInt(groupId), parseInt(groupId)];
+        await pool.query(query, values);
     } catch (error) {
-        console.error("Error creating table:", error);
+        throw error;
+    }
+}
+
+export async function writeToSubGroups(groupId, mainGroupId) {
+    try {
+        const query = 'INSERT INTO sub_groups (group_id, main_group_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE main_group_id = ?';
+        const values = [parseInt(groupId), parseInt(mainGroupId), parseInt(mainGroupId)];
+        await pool.query(query, values);
+    } catch (error) {
         throw error;
     }
 }
 
 export async function writeToUsers(discordId, robloxId) {
     try {
-        await ensureTableExists();
-
         const query = 'INSERT INTO users (discord_id, roblox_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE roblox_id = ?';
         const values = [BigInt(discordId), parseInt(robloxId), parseInt(robloxId)];
         await pool.query(query, values);
     } catch (error) {
-        console.error("Error writing to database users:", error);
+        throw error;
+    }
+}
+
+export async function getSubGroupsFromGuild(guildId) {
+    try {
+        const query = `
+            SELECT sg.group_id 
+            FROM sub_groups AS sg
+            JOIN guilds AS g ON sg.main_group_id = g.group_id
+            WHERE g.guild_id = ?;
+        `;
+        const values = [BigInt(guildId)];
+        const [rows] = await pool.query(query, values);
+
+        const groupIds = rows.map(row => row.group_id);
+        return groupIds;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function getGroupFromGuild(guildId) {
+    try {
+        const query = 'SELECT group_id FROM guilds WHERE guild_id = ?';
+        const values = [BigInt(guildId)];
+        const [rows] = await pool.query(query, values);
+
+        return rows.length > 0 ? rows[0].roblox_id : null;
+    } catch (error) {
         throw error;
     }
 }
@@ -50,7 +81,6 @@ export async function getRobloxFromDiscord(discordId) {
 
         return rows.length > 0 ? rows[0].roblox_id : null;
     } catch (error) {
-        console.error("Error retrieving Roblox ID from database using Discord ID:", error);
         throw error;
     }
 }
@@ -63,7 +93,6 @@ export async function getDiscordFromRoblox(robloxId) {
 
         return rows.length > 0 ? rows[0].discord_id : null;
     } catch (error) {
-        console.error("Error retrieving Discord ID from database using Roblox ID:", error);
         throw error;
     }
 }

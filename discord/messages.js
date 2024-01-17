@@ -1,6 +1,6 @@
 import { EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } from 'discord.js';
 
-export async function sendLinkEmbed(interaction) {
+export function linkMessage() {
     const embed = new EmbedBuilder()
         .setTitle('Link Your Roblox Account')
         .setDescription('Click to link your Discord account to your Roblox account.');
@@ -12,11 +12,28 @@ export async function sendLinkEmbed(interaction) {
 
     const row = new ActionRowBuilder().addComponents(button);
 
-    const channel = interaction.channel;
-    await channel.send({ embeds: [embed], components: [row] });
+    return { embeds: [embed], components: [row] }
 }
 
-export async function sendAuthEmbed(interaction, state) {
+export function authSuccessMessage() {
+    const embed = new EmbedBuilder()
+        .setTitle('Authorization Successful')
+        .setDescription('Your Discord and Roblox accounts have been successfully linked.')
+        .setColor(0x00FF00);
+
+    return { embeds: [embed], components: [], ephemeral: true }
+}
+
+export function authErrorMessage() {
+    const embed = new EmbedBuilder()
+        .setTitle('Authorization Failed')
+        .setDescription('There was an error linking your Discord and Roblox accounts.')
+        .setColor(0xFF0000);
+
+    return { embeds: [embed], components: [], ephemeral: true }
+}
+
+export function authMessage(state) {
     const redirectUri = 'https://rolinker.net/auth';
     const scope = 'openid+profile';
     const authUrl = `https://apis.roblox.com/oauth/v1/authorize?client_id=${process.env.ROBLOX_OAUTH_CLIENT}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
@@ -33,10 +50,5 @@ export async function sendAuthEmbed(interaction, state) {
 
     const row = new ActionRowBuilder().addComponents(button);
 
-    await interaction.reply({
-        embeds: [embed],
-        components: [row],
-        ephemeral: true,
-        fetchReply: true
-    });
+    return {embeds: [embed], components: [row], ephemeral: true, fetchReply: true}
 }
