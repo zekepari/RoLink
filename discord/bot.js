@@ -1,5 +1,5 @@
-import { REST, Client, GatewayIntentBits, SlashCommandBuilder, Routes } from 'discord.js';
-import { setupInteractionHandlers } from './interactions.js';
+import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
+import { setCommand } from './commands/set.js'
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -7,59 +7,28 @@ dotenv.config();
 export default function setupBot() {
     const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
-    client.once('ready', () => {
+    client.once(Events.ClientReady, () => {
         console.log(`Logged in as ${client.user.username}`);
     });
 
-    const commands = [
-        new SlashCommandBuilder()
-            .setName('set')
-            .setDescription('Set link channels and Roblox groups')
-            .addSubcommand(subcommand =>
-                subcommand.setName('link-channel')
-                    .setDescription('Link a Discord channel to receive a link Roblox embed')
-                    .addChannelOption(option =>
-                        option.setName('channel')
-                            .setDescription('The channel you want to send the link Roblox embed to')
-                    )
-            )
-            .addSubcommand(subcommand =>
-                subcommand.setName('group')
-                    .setDescription('Link this server with a Roblox group')
-                    .addIntegerOption(option =>
-                        option.setName('group-id')
-                            .setDescription('The group ID you want to link to this Discord server')
-                            .setRequired(true)
-                        )
-                    .addIntegerOption(option =>
-                        option.setName('main-group-id')
-                            .setDescription('The group ID of your main group (Only use if this is a division Discord server)')
-                        )
-            ),
-        new SlashCommandBuilder()
-            .setName('get')
-            .setDescription('Get roles and divisions')
-            .addSubcommand(subcommand =>
-                subcommand.setName('roles')
-                    .setDescription('Obtain your Roblox rank as a Discord role')
-            )
-            .addSubcommand(subcommand =>
-                subcommand.setName('divisions')
-                    .setDescription("Access division Discord servers you're a member of")
-            )
-    ];
+    client.commands = new Collection();
+    client.commands.set(setCommand.data.name, setCommand);
 
-    const commandsJSON = commands.map(command => command.toJSON());
-    const rest = new REST({version: '9'}).setToken(process.env.DISCORD_BOT_TOKEN);
+    client.on(Events.InteractionCreate, async (interaction) => {
+        if (!interaction.isChatInputCommand()) return;
+        const command = interaction.client.commands.get(interaction.commandName);
 
-    rest.put(
-        Routes.applicationCommands(process.env.DISCORD_CLIENT_ID),
-        { body: commandsJSON }
-    ).then(() => {
-        console.log(`Commands registered globally`);
-    }).catch(console.error);
+        if (!command) {
+            console.error(`No command matching ${interaction.commandName} was found.`);
+            return;
+        }
 
-    setupInteractionHandlers(client)
+        try {
+            await command.execute(interaction);
+        } catch (error) {
+            console.error(error);
+        }
+    })
 
     client.login(process.env.DISCORD_BOT_TOKEN);
 }

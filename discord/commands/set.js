@@ -1,9 +1,9 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { getRobloxFromDiscord } from '../../database';
+import { SlashCommandBuilder } from 'discord.js';
+import { getRobloxFromDiscord } from '../../database.js';
 import noblox from 'noblox.js'
-import { linkEmbed } from '../messages';
+import { linkMessage } from '../messages.js';
 
-module.exports = {
+export const setCommand = {
     data: new SlashCommandBuilder()
         .setName('set')
         .setDescription('Set link channels and Roblox groups')
@@ -33,7 +33,7 @@ module.exports = {
                 await interaction.deferReply();
                 await interaction.deleteReply();
 
-                await channel.send(linkEmbed);
+                await channel.send(linkMessage());
             } catch (error) {
                 console.error(error);
             }
