@@ -73,41 +73,26 @@ export default function setupRoutes(app) {
     });
 
     app.get('/get-roles', async (req, res) => {
-        const { id } = req.query
-        if (!id) {
-            res.status(400).json({ error: "Discord ID is required" });
+        const { guildId, robloxId } = req.query
+        if (!robloxId) {
+            res.status(400).json({ error: "Roblox ID is required" });
+            return;
+        }
+
+        if (!guildId) {
+            res.status(400).json({ error: "Guild ID is required" });
             return;
         }
 
         try {
-            const robloxId = await getRobloxUser(id);
-            if (robloxId) {
+            const robloxUser = await getRobloxUser(robloxId);
+            if (robloxUser) {
                 // get roles logic
             } else {
                 res.status(404).json({ error: "No Roblox ID found for the provided Discord ID" });
             }
         } catch (error) {
             console.error("Error in /get-roles:", error);
-            res.status(500).json({ error: "Internal server error" });
-        }
-    })
-
-    app.get('/get-divisions', async (req, res) => {
-        const { id } = req.query
-        if (!id) {
-            res.status(400).json({ error: "Discord ID is required" });
-            return;
-        }
-
-        try {
-            const robloxId = await getRobloxUser(id);
-            if (robloxId) {
-                // get divisions logic
-            } else {
-                res.status(404).json({ error: "No Roblox ID found for the provided Discord ID" });
-            }
-        } catch (error) {
-            console.error("Error in /get-divisions route:", error);
             res.status(500).json({ error: "Internal server error" });
         }
     })

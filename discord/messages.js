@@ -38,22 +38,37 @@ export const linkMessage = {
     ]
 };
 
-export const inviteMessage = (invites) => ({
-    embeds: [
+export const inviteMessage = (invites) => {
+    const embeds = [
         new EmbedBuilder()
-            .setTitle('Your Sub-Group Invites')
-            .setDescription("Click to join a Sub-Group you're not already a part of.")
-    ],
-    components: invites.map(invite => {
-        return new ActionRowBuilder().addComponents(
+            .setTitle('Your Sub-Group Invite Links')
+            .setDescription("Click to join a Sub-Group server you're not already a part of.")
+            .setFooter({ text: 'All links will expire in 2 minutes.' })
+    ];
+
+    const components = [];
+    let actionRow = new ActionRowBuilder();
+
+    invites.forEach((invite, index) => {
+        actionRow.addComponents(
             new ButtonBuilder()
                 .setLabel(invite.guild.name)
                 .setURL(`https://discord.gg/${invite.code}`)
                 .setStyle(ButtonStyle.Link)
         );
-    }),
-    ephemeral: true
-});
+
+        if ((index + 1) % 5 === 0 || index === invites.length - 1) {
+            components.push(actionRow);
+            actionRow = new ActionRowBuilder();
+        }
+    });
+
+    return {
+        embeds,
+        components,
+        ephemeral: true
+    };
+};
 
 export const authMessage = (authUrl) => {
     return {

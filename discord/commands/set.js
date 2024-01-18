@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { addGuild, addInviteChannel, addSubGuild, deleteSubGuild, getGroup, getGuild, getRobloxUser } from '../../database.js';
+import { addGuild, addInviteChannel, addSubGuild, deleteSubGuild, getGroup, getGuild, getRobloxUser, getSubGuilds } from '../../database.js';
 import noblox from 'noblox.js'
 import { failMessage, successMessage } from '../messages.js';
 
@@ -121,6 +121,24 @@ export const setCommand = {
 
             try {
                 const mainGuildId = await getGuild(mainGroupId);
+
+                try {
+                    const subGuildIds = await getSubGuilds(mainGuildId)
+
+                    if (subGuildIds.length >= 25) {
+                        await interaction.reply(failMessage('Set Main-Group', 'You are at the maximum sub-group limit (25).'));
+                        return;
+                    }
+                } catch (error) {
+                    console.error(error);
+                    await interaction.reply(failMessage('Set Main-Group', 'There was an error getting the sub-groups. Please contact support if this problem persists.'));
+                }
+            } catch (error) {
+                console.error(error);
+                await interaction.reply(failMessage('Set Main-Group', 'There was an error getting the main group. Please contact support if this problem persists.'));
+            }
+
+            try {
                 await addSubGuild(mainGuildId, interaction.guild.id);
                 await interaction.reply(successMessage('Set Main-Group', 'The main group has been set successfully.'));
             } catch (error) {

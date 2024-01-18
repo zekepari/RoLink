@@ -34,29 +34,36 @@ export const getCommand = {
 
         } else if (interaction.options.getSubcommand() === 'sub-groups') {
             const subGuildIds = await getSubGuilds(interaction.guild.id);
-
+        
             if (subGuildIds.length === 0) {
                 await interaction.reply(failMessage('Get Sub-Groups', 'No sub-groups exist for this server.'));
                 return;
             }
-
-            const inviteChannelPromises = subGuildIds.map(subGuildId => getInviteChannel(subGuildId));
-            const inviteChannelsIds = await Promise.all(inviteChannelPromises);
-
-            const invitePromises = inviteChannelsIds.map(async inviteChannelId => {
+        
+            const invitePromises = subGuildIds.map(async subGuildId => {
+                const subGuild = await client.guilds.fetch(subGuildId).catch(error => console.error(error));
+        
+                if (!subGuild || subGuild.members.fetch(interaction.user.id)) return;
+        
+                const inviteChannelId = await getInviteChannel(subGuildId);
                 const inviteChannel = client.channels.cache.get(inviteChannelId);
-
+        
                 if (!inviteChannel) return;
-
+        
                 return inviteChannel.createInvite({
-                    maxAge: 86400,
+                    maxAge: 120,
                     maxUses: 1
                 }).catch(error => console.error(error));
             });
-
+        
             const invites = (await Promise.all(invitePromises)).filter(invite => invite != null);
 
-            interaction.reply(inviteMessage(invites))
+            if (invites.length === 0) {
+                await interaction.reply(failMessage('Get Sub-Groups', 'There are no sub-group servers for you to join.'));
+                return;
+            } else {
+                interaction.reply(inviteMessage(invites));
+            }
         }
     }
 }
