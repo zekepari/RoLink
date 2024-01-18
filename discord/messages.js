@@ -9,7 +9,7 @@ export const successMessage = (title, description) => ({
     ],
     components: [],
     ephemeral: true
-})
+});
 
 export const failMessage = (title, description) => ({
     embeds: [
@@ -20,7 +20,7 @@ export const failMessage = (title, description) => ({
     ],
     components: [],
     ephemeral: true
-})
+});
 
 export const linkMessage = {
     embeds: [
@@ -37,6 +37,23 @@ export const linkMessage = {
         )
     ]
 };
+
+export const inviteMessage = (invites) => ({
+    embeds: [
+        new EmbedBuilder()
+            .setTitle('Your Sub-Group Invites')
+            .setDescription("Click to join a Sub-Group you're not already a part of.")
+    ],
+    components: invites.map(invite => {
+        return new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setLabel(invite.guild.name)
+                .setURL(`https://discord.gg/${invite.code}`)
+                .setStyle(ButtonStyle.Link)
+        );
+    }),
+    ephemeral: true
+});
 
 export const authMessage = (authUrl) => {
     return {

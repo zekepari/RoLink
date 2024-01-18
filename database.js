@@ -11,6 +11,7 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
+    supportBigNumbers: true
 });
 
 export async function addGuild(guildId, groupId) {
@@ -23,7 +24,7 @@ export async function addGuild(guildId, groupId) {
     }
 }
 
-export async function addLinkChannel(guildId, channelId) {
+export async function addInviteChannel(guildId, channelId) {
     try {
         const query = 'UPDATE guilds SET invite_channel_id = ? WHERE guild_id = ?';
         const values = [BigInt(channelId), BigInt(guildId)];
@@ -36,7 +37,7 @@ export async function addLinkChannel(guildId, channelId) {
 export async function addSubGuild(parentGuildId, subGuildId) {
     try {
         const query = 'INSERT INTO sub_guilds (parent_guild_id, sub_guild_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE parent_guild_id = ?';
-        const values = [parseInt(parentGuildId), parseInt(subGuildId), parseInt(parentGuildId)];
+        const values = [BigInt(parentGuildId), BigInt(subGuildId), BigInt(parentGuildId)];
         await pool.query(query, values);
     } catch (error) {
         throw error;
@@ -85,6 +86,18 @@ export async function getGroup(guildId) {
         const [rows] = await pool.query(query, values);
 
         return rows.length > 0 ? rows[0].group_id : null;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function getInviteChannel(guildId) {
+    try {
+        const query = 'SELECT invite_channel_id FROM guilds WHERE guild_id = ?';
+        const values = [BigInt(guildId)];
+        const [rows] = await pool.query(query, values);
+
+        return rows.length > 0 ? rows[0].invite_channel_id : null;
     } catch (error) {
         throw error;
     }

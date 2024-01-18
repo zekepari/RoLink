@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { addGuild, addLinkChannel, addSubGuild, deleteSubGuild, getGroup, getGuild, getRobloxUser } from '../../database.js';
+import { addGuild, addInviteChannel, addSubGuild, deleteSubGuild, getGroup, getGuild, getRobloxUser } from '../../database.js';
 import noblox from 'noblox.js'
 import { failMessage, successMessage } from '../messages.js';
 
@@ -9,14 +9,15 @@ export const setCommand = {
         .setDescription('set up your server')
         .addSubcommand(subcommand =>
             subcommand.setName('invite-channel')
-                .setDescription('link a discord channel to invite new players too')
+                .setDescription('set a discord channel to invite new players too')
                 .addChannelOption(option =>
                     option.setName('channel')
-                        .setDescription('the channel you want to invite new players too'))
+                        .setDescription('the channel you want to invite new players too')
+                        .setRequired(true))
         )
         .addSubcommand(subcommand =>
             subcommand.setName('group')
-                .setDescription('link this server with a group')
+                .setDescription('set up this server with a group')
                 .addIntegerOption(option =>
                     option.setName('group-id')
                         .setDescription('the group ID you want to link to this server')
@@ -24,7 +25,7 @@ export const setCommand = {
         )
         .addSubcommand(subcommand =>
             subcommand.setName('main-group')
-                .setDescription('link this server to main group (only use if this is a sub-group server)')
+                .setDescription('set this server to a main group (only use if this is a sub-group server)')
                 .addIntegerOption(option =>
                     option.setName('main-group-id')
                         .setDescription('the group ID of your main group')
@@ -55,7 +56,7 @@ export const setCommand = {
             }
 
             try {
-                await addLinkChannel(interaction.guild.id, channel.id)
+                await addInviteChannel(interaction.guild.id, channel.id)
                 await interaction.reply(successMessage('Set Invite-Channel', 'The invite-channel has been set successfully.'));
             } catch (error) {
                 console.error(error);

@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { getGroup, getSubGuilds, getRobloxUser } from '../../database.js';
-import { failMessage, successMessage } from '../messages.js';
+import { getGroup, getSubGuilds, getRobloxUser, getInviteChannel } from '../../database.js';
+import { failMessage, inviteMessage, successMessage } from '../messages.js';
 
 export const getCommand = {
     data: new SlashCommandBuilder()
@@ -12,9 +12,9 @@ export const getCommand = {
         )
         .addSubcommand(subcommand =>
             subcommand.setName('sub-groups')
-                .setDescription("get invited to any sub-group servers you're apart of")
+                .setDescription("get invited to any sub-group servers you're not already apart of")
         ),
-    async execute(interaction) {
+    async execute(interaction, client) {
         const robloxId = await getRobloxUser(interaction.user.id);
         const groupId = await getGroup(interaction.guild.id);
 
@@ -31,16 +31,32 @@ export const getCommand = {
         }
 
         if (interaction.options.getSubcommand() === 'roles') {
-            
+
         } else if (interaction.options.getSubcommand() === 'sub-groups') {
-            const subGroupIds = getSubGuilds(interaction.guild.id);
+            const subGuildIds = await getSubGuilds(interaction.guild.id);
 
-            if (subGroupIds.length !== 0) {
-
-            } else {
+            if (subGuildIds.length === 0) {
                 await interaction.reply(failMessage('Get Sub-Groups', 'No sub-groups exist for this server.'));
                 return;
             }
+
+            const inviteChannelPromises = subGuildIds.map(subGuildId => getInviteChannel(subGuildId));
+            const inviteChannelsIds = await Promise.all(inviteChannelPromises);
+
+            const invitePromises = inviteChannelsIds.map(async inviteChannelId => {
+                const inviteChannel = client.channels.cache.get(inviteChannelId);
+
+                if (!inviteChannel) return;
+
+                return inviteChannel.createInvite({
+                    maxAge: 86400,
+                    maxUses: 1
+                }).catch(error => console.error(error));
+            });
+
+            const invites = (await Promise.all(invitePromises)).filter(invite => invite != null);
+
+            interaction.reply(inviteMessage(invites))
         }
     }
 }
