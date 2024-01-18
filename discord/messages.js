@@ -38,11 +38,7 @@ export const linkMessage = {
     ]
 };
 
-export const authMessage = (state) => {
-    const redirectUri = 'https://rolinker.net/auth';
-    const scope = 'openid+profile';
-    const authUrl = `https://apis.roblox.com/oauth/v1/authorize?client_id=${process.env.ROBLOX_OAUTH_CLIENT}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code&state=${state}`;
-
+export const authMessage = (authUrl) => {
     return {
         embeds: [
             new EmbedBuilder()
