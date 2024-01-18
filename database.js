@@ -13,7 +13,7 @@ const pool = mysql.createPool({
     queueLimit: 0,
 });
 
-export async function writeToGuilds(guildId, groupId) {
+export async function addGuild(guildId, groupId) {
     try {
         const query = 'INSERT INTO guilds (guild_id, group_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE group_id = ?';
         const values = [BigInt(guildId), parseInt(groupId), parseInt(groupId)];
@@ -23,17 +23,27 @@ export async function writeToGuilds(guildId, groupId) {
     }
 }
 
-export async function writeToSubGroups(groupId, mainGroupId) {
+export async function addLinkChannel(guildId, channelId) {
     try {
-        const query = 'INSERT INTO sub_groups (group_id, main_group_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE main_group_id = ?';
-        const values = [parseInt(groupId), parseInt(mainGroupId), parseInt(mainGroupId)];
+        const query = 'UPDATE guilds SET invite_channel_id = ? WHERE guild_id = ?';
+        const values = [BigInt(channelId), BigInt(guildId)];
         await pool.query(query, values);
     } catch (error) {
         throw error;
     }
 }
 
-export async function writeToUsers(discordId, robloxId) {
+export async function addSubGuild(parentGuildId, subGuildId) {
+    try {
+        const query = 'INSERT INTO sub_guilds (parent_guild_id, sub_guild_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE parent_guild_id = ?';
+        const values = [parseInt(parentGuildId), parseInt(subGuildId), parseInt(parentGuildId)];
+        await pool.query(query, values);
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function addUser(discordId, robloxId) {
     try {
         const query = 'INSERT INTO users (discord_id, roblox_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE roblox_id = ?';
         const values = [BigInt(discordId), parseInt(robloxId), parseInt(robloxId)];
@@ -43,39 +53,46 @@ export async function writeToUsers(discordId, robloxId) {
     }
 }
 
-export async function getSubGroupsFromGuild(guildId) {
+export async function getSubGuilds(guildId) {
     try {
-        const query = `
-            SELECT sg.group_id 
-            FROM sub_groups AS sg
-            JOIN guilds AS g ON sg.main_group_id = g.group_id
-            WHERE g.guild_id = ?;
-        `;
+        const query = 'SELECT sub_guild_id FROM sub_guilds WHERE parent_guild_id = ?';
         const values = [BigInt(guildId)];
         const [rows] = await pool.query(query, values);
 
-        const groupIds = rows.map(row => row.group_id);
+        const groupIds = rows.map(row => row.sub_guild_id);
         return groupIds;
     } catch (error) {
         throw error;
     }
 }
 
-export async function getGroupFromGuild(guildId) {
+export async function getGuild(groupId) {
     try {
-        const query = 'SELECT group_id FROM guilds WHERE guild_id = ?';
-        const values = [BigInt(guildId)];
+        const query = 'SELECT guild_id FROM guilds WHERE group_id = ?';
+        const values = [parseInt(groupId)];
         const [rows] = await pool.query(query, values);
 
-        return rows.length > 0 ? rows[0].roblox_id : null;
+        return rows.length > 0 ? rows[0].guild_id : null;
     } catch (error) {
         throw error;
     }
 }
 
-export async function delGroupFromGuild(guildId) {
+export async function getGroup(guildId) {
     try {
-        let query = 'DELETE FROM sub_groups WHERE group_id = (SELECT group_id FROM guilds WHERE guild_id = ?) OR main_group_id = (SELECT group_id FROM guilds WHERE guild_id = ?)';
+        const query = 'SELECT group_id FROM guilds WHERE guild_id = ?';
+        const values = [BigInt(guildId)];
+        const [rows] = await pool.query(query, values);
+
+        return rows.length > 0 ? rows[0].group_id : null;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export async function deleteGuild(guildId) {
+    try {
+        let query = 'DELETE FROM sub_guilds WHERE parent_guild_id = (SELECT group_id FROM guilds WHERE guild_id = ?) OR sub_group_id = (SELECT group_id FROM guilds WHERE guild_id = ?)';
         let values = [BigInt(guildId), BigInt(guildId)];
         await pool.query(query, values);
 
@@ -90,10 +107,10 @@ export async function delGroupFromGuild(guildId) {
     }
 }
 
-export async function delSubGroupIfExist(groupId) {
+export async function deleteSubGuild(guildId) {
     try {
-        const query = 'DELETE FROM sub_groups WHERE group_id = ?';
-        const values = [parseInt(groupId)];
+        const query = 'DELETE FROM sub_guilds WHERE sub_guild_id = ?';
+        const values = [BigInt(guildId)];
         const [result] = await pool.query(query, values);
 
         return result.affectedRows > 0;
@@ -102,7 +119,7 @@ export async function delSubGroupIfExist(groupId) {
     }
 }
 
-export async function getRobloxFromDiscord(discordId) {
+export async function getRobloxUser(discordId) {
     try {
         const query = 'SELECT roblox_id FROM users WHERE discord_id = ?';
         const values = [BigInt(discordId)];
@@ -114,7 +131,7 @@ export async function getRobloxFromDiscord(discordId) {
     }
 }
 
-export async function getDiscordFromRoblox(robloxId) {
+export async function getDiscordUser(robloxId) {
     try {
         const query = 'SELECT discord_id FROM users WHERE roblox_id = ?';
         const values = [BigInt(robloxId)];

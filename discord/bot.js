@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { interactionCreate } from './events/interactionCreate.js';
 import { clientReady } from './events/clientReady.js';
 import { guildDelete } from './events/guildDelete.js';
+import { getCommand } from './commands/get.js';
+import { sendCommand } from './commands/send.js';
 
 dotenv.config();
 
@@ -12,6 +14,8 @@ export default function setupBot() {
 
     client.commands = new Collection();
     client.commands.set(setCommand.data.name, setCommand);
+    client.commands.set(getCommand.data.name, getCommand);
+    client.commands.set(sendCommand.data.name, sendCommand);
 
     client.once(Events.ClientReady, (...args) => clientReady.execute(...args));
     client.on(Events.InteractionCreate, (...args) => interactionCreate.execute(...args))

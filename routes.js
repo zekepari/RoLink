@@ -1,5 +1,5 @@
 import { getUserInfo, exchangeCodeForToken } from './auth.js';
-import { writeToUsers, getDiscordFromRoblox, getRobloxFromDiscord } from './database.js';
+import { getRobloxUser, getDiscordUser, addUser } from './database.js';
 import { stateMap } from './index.js';
 import { failMessage, successMessage } from './discord/messages.js';
 
@@ -20,7 +20,7 @@ export default function setupRoutes(app) {
         try {
             const tokenData = await exchangeCodeForToken(code);
             const userInfo = await getUserInfo(tokenData.access_token);
-            await writeToUsers(interaction.user.id, userInfo.sub);
+            await addUser(interaction.user.id, userInfo.sub);
 
             res.redirect('/auth/success');
             await interaction.editReply(successMessage('Authorization', 'Your Discord and Roblox accounts have been linked successfully.'))
@@ -40,7 +40,7 @@ export default function setupRoutes(app) {
         }
 
         try {
-            const robloxId = await getRobloxFromDiscord(id);
+            const robloxId = await getRobloxUser(id);
             if (robloxId) {
                 res.json({ robloxId });
             } else {
@@ -60,7 +60,7 @@ export default function setupRoutes(app) {
         }
 
         try {
-            const robloxId = await getDiscordFromRoblox(id);
+            const robloxId = await getDiscordUser(id);
             if (robloxId) {
                 res.json({ robloxId });
             } else {
@@ -80,7 +80,7 @@ export default function setupRoutes(app) {
         }
 
         try {
-            const robloxId = await getRobloxFromDiscord(id);
+            const robloxId = await getRobloxUser(id);
             if (robloxId) {
                 // get roles logic
             } else {
@@ -100,7 +100,7 @@ export default function setupRoutes(app) {
         }
 
         try {
-            const robloxId = await getRobloxFromDiscord(id);
+            const robloxId = await getRobloxUser(id);
             if (robloxId) {
                 // get divisions logic
             } else {
