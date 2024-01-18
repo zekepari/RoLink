@@ -73,6 +73,23 @@ export async function getGroupFromGuild(guildId) {
     }
 }
 
+export async function delGroupFromGuild(guildId) {
+    try {
+        let query = 'DELETE FROM sub_groups WHERE group_id = (SELECT group_id FROM guilds WHERE guild_id = ?) OR main_group_id = (SELECT group_id FROM guilds WHERE guild_id = ?)';
+        let values = [BigInt(guildId), BigInt(guildId)];
+        await pool.query(query, values);
+
+
+        query = 'DELETE FROM guilds WHERE guild_id = ?';
+        values = [BigInt(guildId)];
+        const [result] = await pool.query(query, values);
+
+        return result.affectedRows > 0;
+    } catch (error) {
+        throw error;
+    }
+}
+
 export async function delSubGroupIfExist(groupId) {
     try {
         const query = 'DELETE FROM sub_groups WHERE group_id = ?';
