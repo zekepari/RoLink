@@ -21,74 +21,56 @@ export const setCommand = {
                     option.setName('group-id')
                         .setDescription('the group ID you want to link to this server')
                         .setRequired(true))
+        )
         .addSubcommand(subcommand =>
             subcommand.setName('main-group')
-                .setDescription('link this server to main group (only use if this is a sub-group server)'))
+                .setDescription('link this server to main group (only use if this is a sub-group server)')
                 .addIntegerOption(option =>
                     option.setName('main-group-id')
                         .setDescription('the group ID of your main group')
                         .setRequired(true))
         ),
     async execute(interaction) {
+        const robloxId = await getRobloxUser(interaction.user.id);
+
+        //assure user is server owner
+        if (interaction.guild.ownerId != interaction.user.id) {
+            await interaction.reply(failMessage('Set Command', 'You must be the server owner to use this command.'));
+            return;
+        }
+
+        //assure user is linked
+        if (!robloxId) {
+            await interaction.reply(failMessage('Set Command', 'Your Roblox account is not linked.'));
+            return;
+        }
+
         if (interaction.options.getSubcommand() === 'invite-channel') {
             const channel = interaction.options.getChannel('channel') ?? interaction.channel;
-            const groupId = await getGroup(interaction.guild.id)
-
-            if (interaction.guild.ownerId != interaction.user.id) {
-                await interaction.reply(failMessage('Set Invite-Channel', 'You must be the server owner to use this command.'));
-                return
-            }
+            const groupId = await getGroup(interaction.guild.id);
 
             if (!groupId) {
                 await interaction.reply(failMessage('Set Invite-Channel', 'You must set this server to a group to use this command.'));
-                return
+                return;
             }
 
             try {
                 await addLinkChannel(interaction.guild.id, channel.id)
-                await interaction.reply(successMessage('Set Invite-Channel', 'Your invite-channel has been set successfully.'));
+                await interaction.reply(successMessage('Set Invite-Channel', 'The invite-channel has been set successfully.'));
             } catch (error) {
-                console.error(error)
+                console.error(error);
                 await interaction.reply(failMessage('Set Invite-Channel', 'There was an error setting the link-channel. Check if RoLinker can see messages and create invites in that channel.'));
             }
         } else if (interaction.options.getSubcommand() === 'group') {
             const groupId = interaction.options.getInteger('group-id');
-            const mainGroupId = interaction.options.getInteger('main-group-id') ?? false;
-            const robloxId = await getRobloxUser(interaction.user.id);
 
-            //assure ownership of discord
-            if (interaction.guild.ownerId != interaction.user.id) {
-                await interaction.reply(failMessage('Set Group', 'You must be the server owner to use this command.'));
-                return;
-            }
-
-            //assure user is linked
-            if (!robloxId) {
-                await interaction.reply(failMessage('Set Group', 'Your Roblox account is not linked.'));
-                return;
-            }
-
-            //assure ownership of group(s)
+            //assure ownership of group
             try {
-                const robloxRank = await noblox.getRankInGroup(groupId, robloxId)
+                const robloxRank = await noblox.getRankInGroup(groupId, robloxId);
 
                 if (robloxRank != 255) {
                     await interaction.reply(failMessage('Set Group', 'You must be the group owner to use this command.'));
                     return;
-                }
-
-                if (mainGroupId) {
-                    try {
-                        const subRobloxRank = await noblox.getRankInGroup(mainGroupId, robloxId)
-                        if (subRobloxRank != 255) {
-                            await interaction.reply(failMessage('Set Group', 'You must be the group owner to use this command.'));
-                            return;
-                        }
-                    } catch (error) {
-                        console.error(error)
-                        await interaction.reply(failMessage('Set Group', 'There was an error getting your main group rank. Please contact support if this problem persists.'));
-                        return;
-                    }
                 }
             } catch (error) {
                 console.error(error)
@@ -96,35 +78,53 @@ export const setCommand = {
                 return;
             }
 
-            if (!mainGroupId || mainGroupId === 0) {
-                try {
-                    await addGuild(interaction.guild.id, groupId);
-                    const wasSubGroup = await deleteSubGuild(interaction.guild.id)
+            try {
+                await addGuild(interaction.guild.id, groupId);
+                await interaction.reply(successMessage('Set Group', 'The group has been set successfully.'));
+            } catch (error) {
+                console.error(error)
+                await interaction.reply(failMessage('Set Group', 'There was an error setting the group. Please contact support if this problem persists.'));
+            }
+        } else if (interaction.options.getSubcommand() === 'main-group') {
+            const mainGroupId = interaction.options.getInteger('main-group-id');
 
-                    if (wasSubGroup) {
-                        await interaction.reply(successMessage('Set Group', 'Your group has been set successfully, note that this group is no longer a sub-group.'));
+            if (mainGroupId === 0) {
+                try {
+                    const deletePotentialSubGuild = await deleteSubGuild(interaction.guild.id);
+                    if (deletePotentialSubGuild) {
+                        await interaction.reply(successMessage('Set Main-Group', 'The main group has been removed successfully.'));
                     } else {
-                        await interaction.reply(successMessage('Set Group', 'Your group has been set successfully.'));
+                        await interaction.reply(successMessage('Set Main-Group', 'This server is not linked to a main group.'));
                     }
+                    return;
                 } catch (error) {
-                    console.error(error)
-                    await interaction.reply(failMessage('Set Group', 'There was an error setting the group. Please contact support if this problem persists.'));
-                }
-            } else {
-                if (mainGroupId === groupId) {
-                    await interaction.reply(failMessage('Set Group', 'You cannot make a group a sub-group of itself.'));
+                    console.error(error);
+                    await interaction.reply(failMessage('Set Main-Group', 'There was an error removing your main group. Please contact support if this problem persists.'));
                     return;
                 }
+            }
 
-                try {
-                    await addGuild(interaction.guild.id, groupId);
-                    const mainGuildId = getGuild(mainGroupId)
-                    await addSubGuild(mainGuildId, interaction.guild.id)
-                    await interaction.reply(successMessage('Set Group', 'Your sub-group has been set successfully.'));
-                } catch (error) {
-                    console.error(error)
-                    await interaction.reply(failMessage('Set Group', 'There was an error setting the sub-group. Please contact support if this problem persists.'));
+            //assure ownership of main group
+            try {
+                const robloxRank = await noblox.getRankInGroup(mainGroupId, robloxId)
+
+                if (robloxRank != 255) {
+                    await interaction.reply(failMessage('Set Main-Group', 'You must be the main group owner to use this command.'));
+                    return;
                 }
+            } catch (error) {
+                console.error(error);
+                await interaction.reply(failMessage('Set Main-Group', 'There was an error getting your main group rank. Please contact support if this problem persists.'));
+                return;
+            }
+
+            try {
+                const mainGuildId = await getGuild(mainGroupId);
+                await addSubGuild(mainGuildId, interaction.guild.id);
+                await interaction.reply(successMessage('Set Main-Group', 'The main group has been set successfully.'));
+            } catch (error) {
+                console.error(error);
+                await interaction.reply(failMessage('Set Main-Group', 'There was an error setting the main group. Please contact support if this problem persists.'));
             }
         }
     }
