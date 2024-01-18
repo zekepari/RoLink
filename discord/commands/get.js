@@ -33,7 +33,7 @@ export const getCommand = {
         if (interaction.options.getSubcommand() === 'roles') {
             
         } else if (interaction.options.getSubcommand() === 'sub-groups') {
-            const subGroupIds = getSubGuilds(interaction.guild.id)
+            const subGroupIds = getSubGuilds(interaction.guild.id);
 
             if (subGroupIds.length !== 0) {
 

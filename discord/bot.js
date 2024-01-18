@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
+import { REST, Routes, Client, GatewayIntentBits, Collection, Events } from 'discord.js';
 import { setCommand } from './commands/set.js'
 import dotenv from 'dotenv';
 import { interactionCreate } from './events/interactionCreate.js';
@@ -11,11 +11,22 @@ dotenv.config();
 
 export default function setupBot() {
     const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
+    const rest = new REST().setToken(process.env.DISCORD_BOT_TOKEN)
 
-    client.commands = new Collection();
-    client.commands.set(setCommand.data.name, setCommand);
-    client.commands.set(getCommand.data.name, getCommand);
-    client.commands.set(sendCommand.data.name, sendCommand);
+    const commands = [];
+    commands.push(setCommand.data.toJSON());
+    commands.push(getCommand.data.toJSON());
+    commands.push(sendCommand.data.toJSON());
+
+    (async () => {
+        try {
+            await rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID),
+                {body: commands}
+            );
+        } catch (error) {
+            console.error(error)
+        }
+    })();
 
     client.once(Events.ClientReady, (...args) => clientReady.execute(...args));
     client.on(Events.InteractionCreate, (...args) => interactionCreate.execute(...args))
