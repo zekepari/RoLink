@@ -38,26 +38,34 @@ export const linkMessage = {
     ]
 };
 
-export const inviteMessage = (invites) => {
+export const subGroupsMessage = (inviteObjects) => {
     const embeds = [
         new EmbedBuilder()
             .setTitle('Your Sub-Group Invite Links')
-            .setDescription("Click to join a Sub-Group server you're not already a part of.")
+            .setDescription("Click to join a sub-group server you're not already apart of.")
             .setFooter({ text: 'All links will expire in 2 minutes.' })
     ];
 
     const components = [];
     let actionRow = new ActionRowBuilder();
 
-    invites.forEach((invite, index) => {
-        actionRow.addComponents(
-            new ButtonBuilder()
-                .setLabel(invite.guild.name)
-                .setURL(`https://discord.gg/${invite.code}`)
-                .setStyle(ButtonStyle.Link)
-        );
+    inviteObjects.forEach((inviteObj, index) => {
+        const button = new ButtonBuilder()
+            .setLabel(inviteObj.name)
+            
 
-        if ((index + 1) % 5 === 0 || index === invites.length - 1) {
+        if (inviteObj.code != null) {
+            button.setStyle(ButtonStyle.Link);
+            button.setURL(`https://discord.gg/${inviteObj.code}`);
+        } else {
+            button.setStyle(ButtonStyle.Secondary);
+            button.setCustomId(inviteObj.name)
+            button.setDisabled(true);
+        }
+
+        actionRow.addComponents(button);
+
+        if ((index + 1) % 5 === 0 || index === inviteObjects.length - 1) {
             components.push(actionRow);
             actionRow = new ActionRowBuilder();
         }
@@ -69,6 +77,7 @@ export const inviteMessage = (invites) => {
         ephemeral: true
     };
 };
+
 
 export const authMessage = (authUrl) => {
     return {
