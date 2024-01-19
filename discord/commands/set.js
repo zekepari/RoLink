@@ -67,8 +67,13 @@ export const setCommand = {
             const groupId = interaction.options.getInteger('group-id');
 
             if (groupId === 0) {
-                await interaction.editReply(successMessage('Set Group', 'The group has been removed successfully.'));
-                await deleteGuild(interaction.guild.id)
+                const deletedGuild = await deleteGuild(interaction.guild.id)
+
+                if (deletedGuild) {
+                    await interaction.editReply(successMessage('Set Group', 'The group has been removed successfully.'));
+                } else {
+                    await interaction.editReply(failMessage('Set Group', "The group wasn't linked to begin with."));
+                }
             }
 
             //assure ownership of group
