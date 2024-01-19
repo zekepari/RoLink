@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { addGuild, addInviteChannel, addSubGuild, deleteSubGuild, getGroup, getGuild, getRobloxUser, getSubGuilds } from '../../database.js';
+import { addGuild, addInviteChannel, addSubGuild, deleteGuild, deleteSubGuild, getGroup, getGuild, getRobloxUser, getSubGuilds } from '../../database.js';
 import noblox from 'noblox.js'
 import { failMessage, successMessage } from '../messages.js';
 
@@ -63,28 +63,53 @@ export const setCommand = {
                 await interaction.reply(failMessage('Set Invite-Channel', 'There was an error setting the link-channel. Check if RoLinker can see messages and create invites in that channel.'));
             }
         } else if (interaction.options.getSubcommand() === 'group') {
+            await interaction.deferReply({ ephemeral: true })
             const groupId = interaction.options.getInteger('group-id');
+
+            if (groupId === 0) {
+                await interaction.editReply(successMessage('Set Group', 'The group has been removed successfully.'));
+                await deleteGuild(interaction.guild.id)
+            }
 
             //assure ownership of group
             try {
                 const robloxRank = await noblox.getRankInGroup(groupId, robloxId);
 
                 if (robloxRank != 255) {
-                    await interaction.reply(failMessage('Set Group', 'You must be the group owner to use this command.'));
+                    await interaction.editReply(failMessage('Set Group', 'You must be the group owner to use this command.'));
                     return;
                 }
             } catch (error) {
                 console.error(error)
-                await interaction.reply(failMessage('Set Group', 'There was an error getting your group rank. Please contact support if this problem persists.'));
+                await interaction.editReply(failMessage('Set Group', 'There was an error getting your group rank. Please contact support if this problem persists.'));
                 return;
+            }
+
+            const groupRoles = await noblox.getRoles(groupId);
+            const existingRoles = interaction.guild.roles.cache;
+
+            groupRoles.shift();
+            groupRoles.reverse();
+
+            for (const groupRole of groupRoles) {
+                if (existingRoles.some(role => role.name === groupRole.name)) return;
+
+                try {
+                    await interaction.guild.roles.create({
+                        name: groupRole.name,
+                    });
+                    console.log(`Role created: ${groupRole.name}`);
+                } catch (error) {
+                    console.error(`Error creating role ${groupRole.name}:`, error);
+                }
             }
 
             try {
                 await addGuild(interaction.guild.id, groupId);
-                await interaction.reply(successMessage('Set Group', 'The group has been set successfully.'));
+                await interaction.editReply(successMessage('Set Group', 'The group has been set successfully.'));
             } catch (error) {
                 console.error(error)
-                await interaction.reply(failMessage('Set Group', 'There was an error setting the group. Please contact support if this problem persists.'));
+                await interaction.editReply(failMessage('Set Group', 'There was an error setting the group. Please contact support if this problem persists.'));
             }
         } else if (interaction.options.getSubcommand() === 'main-group') {
             const mainGroupId = interaction.options.getInteger('main-group-id');

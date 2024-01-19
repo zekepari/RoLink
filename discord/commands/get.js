@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getGroup, getSubGuilds, getRobloxUser, getInviteChannel } from '../../database.js';
-import { failMessage, subGroupsMessage } from '../messages.js';
+import { failMessage, subGroupsMessage, successMessage } from '../messages.js';
 import noblox from 'noblox.js'
 
 export const getCommand = {
@@ -32,9 +32,40 @@ export const getCommand = {
         }
 
         if (interaction.options.getSubcommand() === 'roles') {
-
+            await interaction.deferReply({ ephemeral: true });
+            const userId = interaction.user.id;
+        
+            const [member, groupRoles] = await Promise.all([
+                interaction.guild.members.fetch(userId),
+                noblox.getRoles(groupId)
+            ]);
+        
+            const groupRankName = await noblox.getRankNameInGroup(groupId, robloxId);
+        
+            const existingRoles = interaction.guild.roles.cache;
+            const discordRoles = groupRoles.map(groupRole => existingRoles.find(role => role.name === groupRole.name)).filter(role => role);
+        
+            const discordRole = discordRoles.find(role => role.name === groupRankName);
+            
+            if (!discordRole) {
+                await interaction.editReply(failMessage('Get Roles', 'No matching server role was found for your rank.'));
+                return;
+            }
+        
+            if (!member.roles.cache.has(discordRole.id)) {
+                await member.roles.remove(discordRoles.map(role => role.id));
+                
+                try {
+                    await member.roles.add(discordRole);
+                    await interaction.editReply(successMessage('Get Roles', 'Your roles have been updated successfully.'));
+                } catch (error) {
+                    await interaction.editReply(failMessage('Get Roles', 'There was an error updating your roles. Check if RoLinker has permission to assign roles to users.'));
+                }
+            } else {
+                await interaction.editReply(failMessage('Get Roles', 'Your roles are already up to date.'));
+            }
         } else if (interaction.options.getSubcommand() === 'sub-groups') {
-            interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({ ephemeral: true });
             const subGuildIds = await getSubGuilds(interaction.guild.id);
 
             if (subGuildIds.length === 0) {
@@ -57,12 +88,8 @@ export const getCommand = {
     
                     try {
                         const member = await subGuild.members.fetch(interaction.user.id);
-                        if (member || !inviteChannelId) {
-                            return { name: subGuild.name, code: null };
-                        }
-    
                         const inviteChannel = client.channels.cache.get(inviteChannelId);
-                        if (!inviteChannel) {
+                        if (member || !inviteChannelId) {
                             return { name: subGuild.name, code: null };
                         }
     
