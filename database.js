@@ -17,7 +17,7 @@ const pool = mysql.createPool({
 export async function addGuild(guildId, groupId) {
     try {
         const query = 'INSERT INTO guilds (guild_id, group_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE group_id = ?';
-        const values = [BigInt(guildId), parseInt(groupId), parseInt(groupId)];
+        const values = [BigInt(guildId), BigInt(groupId), BigInt(groupId)];
         await pool.query(query, values);
     } catch (error) {
         throw error;
@@ -47,7 +47,7 @@ export async function addSubGuild(parentGuildId, subGuildId) {
 export async function addUser(discordId, robloxId) {
     try {
         const query = 'INSERT INTO users (discord_id, roblox_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE roblox_id = ?';
-        const values = [BigInt(discordId), parseInt(robloxId), parseInt(robloxId)];
+        const values = [BigInt(discordId), BigInt(robloxId), BigInt(robloxId)];
         await pool.query(query, values);
     } catch (error) {
         throw error;
@@ -70,7 +70,7 @@ export async function getSubGuilds(guildId) {
 export async function getGuild(groupId) {
     try {
         const query = 'SELECT guild_id FROM guilds WHERE group_id = ?';
-        const values = [parseInt(groupId)];
+        const values = [BigInt(groupId)];
         const [rows] = await pool.query(query, values);
 
         return rows.length > 0 ? rows[0].guild_id : null;
