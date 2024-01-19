@@ -26,6 +26,7 @@ export default function setupRoutes(app) {
             await interaction.editReply(successMessage('Authorization', 'Your Discord and Roblox accounts have been linked successfully.'))
         } catch (error) {
             res.redirect('/auth/error');
+            console.error("Error in /auth route:", error);
             await interaction.editReply(failMessage('Authorization', 'There was an error linking your Discord and Roblox accounts.'))
         } finally {
             stateMap.delete(state);
