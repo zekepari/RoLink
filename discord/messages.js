@@ -53,7 +53,6 @@ export const subGroupsMessage = (inviteObjects) => {
         const button = new ButtonBuilder()
             .setLabel(inviteObj.name)
             
-
         if (inviteObj.code != null) {
             button.setStyle(ButtonStyle.Link);
             button.setURL(`https://discord.gg/${inviteObj.code}`);

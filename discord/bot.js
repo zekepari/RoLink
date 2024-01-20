@@ -9,8 +9,9 @@ import { sendCommand } from './commands/send.js';
 
 dotenv.config();
 
+export const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
+
 export default function setupBot() {
-    const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
     const rest = new REST().setToken(process.env.DISCORD_BOT_TOKEN)
 
     client.commands = new Collection();
@@ -34,7 +35,7 @@ export default function setupBot() {
     })();
 
     client.once(Events.ClientReady, (...args) => clientReady.execute(...args));
-    client.on(Events.InteractionCreate, (...args) => interactionCreate.execute(...args, client))
+    client.on(Events.InteractionCreate, (...args) => interactionCreate.execute(...args))
     client.on(Events.GuildDelete, (...args) => guildDelete.execute(...args))
 
     client.login(process.env.DISCORD_BOT_TOKEN);

@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getGroup, getSubGuilds, getRobloxUser, getInviteChannel } from '../../database.js';
 import { failMessage, subGroupsMessage, successMessage } from '../messages.js';
+import { client } from '../bot.js';
 import noblox from 'noblox.js'
 
 export const getCommand = {
@@ -15,7 +16,7 @@ export const getCommand = {
             subcommand.setName('sub-groups')
                 .setDescription("get invited to any sub-group servers you're not already apart of")
         ),
-    async execute(interaction, client) {
+    async execute(interaction) {
         const robloxId = await getRobloxUser(interaction.user.id);
         const groupId = await getGroup(interaction.guild.id);
 

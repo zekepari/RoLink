@@ -4,7 +4,7 @@ import { generateState } from '../../auth.js';
 import { authMessage } from '../messages.js';
 
 export const interactionCreate = {
-    async execute(interaction, client) {
+    async execute(interaction) {
         if (interaction.isChatInputCommand()) {
             const command = interaction.client.commands.get(interaction.commandName);
 
@@ -14,7 +14,7 @@ export const interactionCreate = {
             }
 
             try {
-                await command.execute(interaction, client);
+                await command.execute(interaction);
             } catch (error) {
                 console.error(error);
             }
