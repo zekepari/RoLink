@@ -87,21 +87,18 @@ export const getCommand = {
                     const inviteChannelId = await getInviteChannel(subGuildId);
     
                     try {
-                        const member = await subGuild.members.fetch(interaction.user.id);
-                        const inviteChannel = client.channels.cache.get(inviteChannelId);
-                        if (member || !inviteChannelId) {
+                        await subGuild.members.fetch(interaction.user.id);
+                        return { name: subGuild.name, code: null };
+                    } catch {
+                        if (!inviteChannelId) {
                             return { name: subGuild.name, code: null };
                         }
-    
+                        const inviteChannel = client.channels.cache.get(inviteChannelId);
                         const invite = await inviteChannel.createInvite({
                             maxAge: 120,
                             maxUses: 1
                         });
-    
                         return { name: subGuild.name, code: invite?.code };
-                    } catch (error) {
-                        console.error(error);
-                        return { name: subGuild.name, code: null };
                     }
                 })
             ))
