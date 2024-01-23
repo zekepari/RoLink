@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { addGuild, addInviteChannel, addSubGuild, deleteGuild, deleteSubGuild, getGroup, getGuild, getRobloxUser, getSubGuilds } from '../../database.js';
 import noblox from 'noblox.js'
-import { failMessage, successMessage } from '../messages.js';
+import { failMessage, messages, successMessage } from '../messages.js';
 
 export const setCommand = {
     data: new SlashCommandBuilder()
@@ -34,15 +34,13 @@ export const setCommand = {
     async execute(interaction) {
         const robloxId = await getRobloxUser(interaction.user.id);
 
-        //assure user is server owner
         if (interaction.guild.ownerId != interaction.user.id) {
-            await interaction.reply(failMessage('Set Command', 'You must be the server owner to use this command.'));
+            await interaction.reply(messages.notServerOwner);
             return;
         }
 
-        //assure user is linked
         if (!robloxId) {
-            await interaction.reply(failMessage('Set Command', 'Your Roblox account is not linked.'));
+            await interaction.reply(messages.notLinked);
             return;
         }
 
@@ -51,16 +49,16 @@ export const setCommand = {
             const groupId = await getGroup(interaction.guild.id);
 
             if (!groupId) {
-                await interaction.reply(failMessage('Set Invite-Channel', 'You must set this server to a group to use this command.'));
+                await interaction.reply(messages.noGroupSet);
                 return;
             }
 
             try {
                 await addInviteChannel(interaction.guild.id, channel.id)
-                await interaction.reply(successMessage('Set Invite-Channel', 'The invite-channel has been set successfully.'));
+                await interaction.reply(messages.setInviteChannelSuccess);
             } catch (error) {
                 console.error(error);
-                await interaction.reply(failMessage('Set Invite-Channel', 'There was an error setting the link-channel. Check if RoLinker can see messages and create invites in that channel.'));
+                await interaction.reply(messages.setInviteChannelError);
             }
         } else if (interaction.options.getSubcommand() === 'group') {
             await interaction.deferReply({ ephemeral: true })
@@ -70,23 +68,22 @@ export const setCommand = {
                 const deletedGuild = await deleteGuild(interaction.guild.id)
 
                 if (deletedGuild) {
-                    await interaction.editReply(successMessage('Set Group', 'The group has been removed successfully.'));
+                    await interaction.editReply(messages.setGroupRemoveSuccess);
                 } else {
-                    await interaction.editReply(failMessage('Set Group', "The group wasn't linked to begin with."));
+                    await interaction.editReply(messages.setGroupRemoveExistFail);
                 }
             }
 
-            //assure ownership of group
             try {
                 const robloxRank = await noblox.getRankInGroup(groupId, robloxId);
 
                 if (robloxRank != 255) {
-                    await interaction.editReply(failMessage('Set Group', 'You must be the group owner to use this command.'));
+                    await interaction.editReply(messages.notGroupOwner);
                     return;
                 }
             } catch (error) {
                 console.error(error)
-                await interaction.editReply(failMessage('Set Group', 'There was an error getting your group rank. Please contact support if this problem persists.'));
+                await interaction.editReply(messages.setGroupFailRankError);
                 return;
             }
 
@@ -111,10 +108,10 @@ export const setCommand = {
 
             try {
                 await addGuild(interaction.guild.id, groupId);
-                await interaction.editReply(successMessage('Set Group', 'The group has been set successfully.'));
+                await interaction.editReply(messages.setGroupSuccess);
             } catch (error) {
                 console.error(error)
-                await interaction.editReply(failMessage('Set Group', 'There was an error setting the group. Please contact support if this problem persists.'));
+                await interaction.editReply(messages.setGroupFailSettingGroup);
             }
         } else if (interaction.options.getSubcommand() === 'main-group') {
             const mainGroupId = interaction.options.getInteger('main-group-id');

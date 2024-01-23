@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { getGroup, getSubGuilds, getRobloxUser, getInviteChannel } from '../../database.js';
-import { failMessage, subGroupsMessage, successMessage } from '../messages.js';
+import { messages, subGroupsMessage } from '../messages.js';
 import { client } from '../bot.js';
 import noblox from 'noblox.js'
 
@@ -20,15 +20,13 @@ export const getCommand = {
         const robloxId = await getRobloxUser(interaction.user.id);
         const groupId = await getGroup(interaction.guild.id);
 
-        //assure user is linked
         if (!robloxId) {
-            await interaction.reply(failMessage('Get', 'Your Roblox account is not linked.'));
+            await interaction.reply(messages.notLinked);
             return;
         }
 
-        //assure guild has a group
         if (!groupId) {
-            await interaction.reply(failMessage('Get', 'This server does not have a group set.'));
+            await interaction.reply(messages.noGroupSet);
             return;
         }
 
@@ -49,7 +47,7 @@ export const getCommand = {
             const discordRole = discordRoles.find(role => role.name === groupRankName);
             
             if (!discordRole) {
-                await interaction.editReply(failMessage('Get Roles', 'No matching server role was found for your rank.'));
+                await interaction.editReply(messages.noMatchingServerRole);
                 return;
             }
         
@@ -58,19 +56,19 @@ export const getCommand = {
                 
                 try {
                     await member.roles.add(discordRole);
-                    await interaction.editReply(successMessage('Get Roles', 'Your roles have been updated successfully.'));
+                    await interaction.editReply(messages.getRolesSuccess);
                 } catch (error) {
-                    await interaction.editReply(failMessage('Get Roles', 'There was an error updating your roles. Check if RoLinker has permission to assign roles to users.'));
+                    await interaction.editReply(messages.getRolesError);
                 }
             } else {
-                await interaction.editReply(failMessage('Get Roles', 'Your roles are already up to date.'));
+                await interaction.editReply(messages.getRolesUpToDate);
             }
         } else if (interaction.options.getSubcommand() === 'sub-groups') {
             await interaction.deferReply({ ephemeral: true });
             const subGuildIds = await getSubGuilds(interaction.guild.id);
 
             if (subGuildIds.length === 0) {
-                await interaction.editReply(failMessage('Get Sub-Groups', 'No sub-groups exist for this server.'));
+                await interaction.editReply(messages.noSubGroupsExist);
                 return;
             }
 
@@ -105,7 +103,7 @@ export const getCommand = {
             ))
 
             if (invites.length === 0) {
-                await interaction.editReply(failMessage('Get Sub-Groups', 'There are no sub-group servers for you to join.'));
+                await interaction.editReply(messages.noSubGroupsToJoin);
                 return;
             } else {
                 await interaction.editReply(subGroupsMessage(invites));

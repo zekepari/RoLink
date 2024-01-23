@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { failMessage, linkMessage, successMessage } from '../messages.js';
+import { linkMessage, messages } from '../messages.js';
 
 export const sendCommand = {
     data: new SlashCommandBuilder()
@@ -17,16 +17,16 @@ export const sendCommand = {
             const channel = interaction.options.getChannel('channel') ?? interaction.channel;
 
             if (interaction.guild.ownerId != interaction.user.id) {
-                await interaction.reply(failMessage('Send Link-Roblox', 'You must be the server owner to use this command.'));
+                await interaction.reply(messages.notServerOwner);
                 return;
             }
 
             try {
                 await channel.send(linkMessage);
-                await interaction.reply(successMessage('Send Link-Roblox', 'The message link-roblox has been sent successfully.'));
+                await interaction.reply(messages.linkRoblox);
             } catch (error) {
                 console.error(error);
-                await interaction.reply(failMessage('Send Link-Roblox', 'There was an error sending link-roblox. Check if RoLinker can send messages to that channel.'));
+                await interaction.reply(messages.linkRobloxError);
             }
         }
     }
